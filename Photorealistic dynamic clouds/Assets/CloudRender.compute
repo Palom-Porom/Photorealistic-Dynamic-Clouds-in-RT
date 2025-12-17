@@ -1,0 +1,209 @@
+#pragma kernel CSMain
+
+RWTexture2D<float4> Result;
+
+float3 _CameraPosition;
+float4x4 _InvViewProj;
+
+float _PlanetRadius;
+float _CloudMinHeight; 
+float _CloudMaxHeight; 
+float _CoarseStep; 
+float _FineStepFactor; 
+int _CoarseStepsMax;
+int _CoarseStepsMin;
+
+
+bool RayIntersectCloudShell(
+    float3 camPos,
+    float3 dir,
+    float3 planetCenter,
+    float planetRadius,
+    float shellHeight,
+    out float3 hitPoint
+)
+{
+    float R = planetRadius + shellHeight;
+
+    float3 O = camPos - planetCenter;
+
+    float b = dot(O, dir);
+    float c = dot(O, O) - R * R;
+    float disc = b * b - c;
+
+    if (disc < 0.0)
+        return false;
+
+    float s = sqrt(disc);
+    float t0 = -b - s;
+    float t1 = -b + s;
+    float t = 1e30;
+
+    if (t0 > 0.0)
+        t = t0;
+    if (t1 > 0.0 && t1 < t)
+        t = t1;
+
+    hitPoint = camPos + dir * t;
+    
+    if (t == 1e30 || hitPoint.y < 0)
+        return false;
+
+    return true;
+}
+
+float HeightDensity(float realH, float minH, float maxH)
+{
+    float mid = 0.5 * (minH + maxH);
+    float hlf = 0.5 * (maxH - minH);
+
+    float d = 1.0 - abs(realH - mid) / hlf;
+    return saturate(d);
+}
+
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    uint2 size;
+    Result.GetDimensions(size.x, size.y);
+    if (id.x >= size.x || id.y >= size.y)
+        return;
+
+    float2 pix = (float2(id.xy) + 0.5) / float2(size);
+    float2 ndc;
+    ndc.x = pix.x * 2.0 - 1.0;
+    ndc.y = (1.0 - pix.y) * 2.0 - 1.0;
+
+    float4 clip = float4(ndc, 1, 1);
+    float4 worldPos = mul(_InvViewProj, clip);
+    worldPos /= worldPos.w;
+
+    float3 worldDir = normalize(worldPos.xyz - _CameraPosition);
+    
+    //Result[id.xy] = float4(worldDir.y, 0.0, 0.0, 1.0);
+    //return;
+
+    float3 planetCenter = float3(0, -_PlanetRadius, 0);
+
+    float camHeight = length(_CameraPosition - planetCenter) - _PlanetRadius;
+    float3 pos;
+    bool hasEntry = false;
+
+    if (_CameraPosition.y < _CloudMinHeight)
+    {
+        // Lower than cloud area -> intersection with lower border
+        hasEntry = RayIntersectCloudShell(
+            _CameraPosition, worldDir,
+            planetCenter, _PlanetRadius,
+            _CloudMinHeight,
+            pos
+        );
+    }
+    else if (_CameraPosition.y > _CloudMaxHeight)
+    {
+        // Higher than cloud area -> intersection with higher border
+        hasEntry = RayIntersectCloudShell(
+            _CameraPosition, worldDir,
+            planetCenter, _PlanetRadius,
+            _CloudMaxHeight,
+            pos
+        );
+    }
+    else if (_CameraPosition.y > _CloudMinHeight && _CameraPosition.y < _CloudMaxHeight)
+    {
+        // Inside -> starting ray-marching right away
+        pos = _CameraPosition;
+        hasEntry = true;
+    }
+
+    if (!hasEntry)
+    {
+        Result[id.xy] = float4(0, 0, 0, 0);
+        return;
+    }
+
+    float alpha = 0.0;
+    float3 color = 0.0;
+
+    float3 planetToP;
+    float realH;
+
+    float fineStep = _CoarseStep * _FineStepFactor;
+    float minCloudHeightLimiter = _CloudMinHeight - _CoarseStep * 0.5 - 1.0;
+    float maxCloudHeightLimiter = _CloudMaxHeight + _CoarseStep * 0.5 + 1.0;
+
+    float angleDiffCos = abs(dot(worldDir, float3(0, 1, 0)));
+    float stepLimit = lerp(_CoarseStepsMax, _CoarseStepsMin, angleDiffCos);
+    
+    int coarseSteps = 0;
+    bool usingFine = false;
+    int emptyFineSamples = 0;
+    const int emptyFineThreshold = 4;
+    float step = 0;
+
+    while (coarseSteps < stepLimit)
+    {
+        float3 planetToP = pos - planetCenter;
+        float realH = length(planetToP) - _PlanetRadius;
+        
+        // Outside of cloud area
+        if (realH < minCloudHeightLimiter || realH > maxCloudHeightLimiter)
+        {
+            //float3 temp = firstPos;
+            //temp += worldDir * step;
+            //Result[id.xy] = float4(pos.y - firstPos.y, 0.0, 0.0, 1.0);
+            //return;
+            break;
+        }
+
+        // Calculate with low accuracy
+        float density = HeightDensity(realH, _CloudMinHeight, _CloudMaxHeight);
+        bool hasCloud = (density > 0.0);
+
+        // fine marching entrance
+        if (hasCloud && !usingFine)
+        {
+            pos -= worldDir * (_CoarseStep * 0.5);
+            usingFine = true;
+            emptyFineSamples = 0;
+        }
+
+        // fine marching exit
+        if (!hasCloud && usingFine)
+        {
+            emptyFineSamples++;
+            if (emptyFineSamples >= emptyFineThreshold)
+            {
+                usingFine = false;
+                emptyFineSamples = 0;
+            }
+        }
+
+        bool doAccumulate = usingFine && hasCloud;
+
+        // Calculate with high accuracy
+        if (doAccumulate)
+        {
+            float contrib = density * 0.05;
+            color += (1.0 - alpha) * contrib;
+            alpha += (1.0 - alpha) * contrib;
+
+            if (alpha >= 1.0)
+            {
+                alpha = 1.0;
+                break;
+            } 
+        }
+
+
+        step = usingFine ? fineStep : _CoarseStep;
+        pos += worldDir * step;
+        
+        coarseSteps += (1 - usingFine); 
+    }
+
+
+
+    Result[id.xy] = float4(color, alpha);
+}
