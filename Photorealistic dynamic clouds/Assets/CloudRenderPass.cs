@@ -75,6 +75,8 @@ class CloudRenderPass : CustomPass
         int y = Mathf.CeilToInt(_target.rt.height / 8.0f);
         cmd.DispatchCompute(cloudCompute, _kernelIndex, x, y, 1);
 
+        Debug.Log($"{x} and {y}");
+        
         blitMaterial.SetTexture("_Source", _target);
         HDUtils.DrawFullScreen(
             cmd,

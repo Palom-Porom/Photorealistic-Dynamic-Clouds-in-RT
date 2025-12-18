@@ -69,6 +69,9 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     Result.GetDimensions(size.x, size.y);
     if (id.x >= size.x || id.y >= size.y)
         return;
+    
+    // Result[id.xy] = float4(1.0, 0.0, 0.0, 1.0);
+    // return;
 
     float2 pix = (float2(id.xy) + 0.5) / float2(size);
     float2 ndc;
@@ -86,7 +89,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     float3 planetCenter = float3(0, -_PlanetRadius, 0);
 
-    float camHeight = length(_CameraPosition - planetCenter) - _PlanetRadius;
+    //float camHeight = length(_CameraPosition - planetCenter) - _PlanetRadius;
     float3 pos;
     bool hasEntry = false;
 
@@ -144,8 +147,8 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     while (coarseSteps < stepLimit)
     {
-        float3 planetToP = pos - planetCenter;
-        float realH = length(planetToP) - _PlanetRadius;
+        planetToP = pos - planetCenter;
+        realH = length(planetToP) - _PlanetRadius;
         
         // Outside of cloud area
         if (realH < minCloudHeightLimiter || realH > maxCloudHeightLimiter)
@@ -207,3 +210,10 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     Result[id.xy] = float4(color, alpha);
 }
+
+
+// [numthreads(8,8,1)]
+// void CSMain(uint3 id : SV_DispatchThreadID)
+// {
+//     Result[id.xy] = float4(1.0, 1.0, 0.0, 1.0);
+// }
