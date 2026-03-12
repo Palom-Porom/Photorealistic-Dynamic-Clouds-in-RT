@@ -460,13 +460,16 @@ MonoBehaviour:
         m_Version: 0
         cloudCompute: {fileID: 7200000, guid: 1f645c489c7e35acf885757a7d8add9d, type: 3}
         blitMaterial: {fileID: 2100000, guid: 3968276e9c126dff387d7d3d2a001f6f, type: 2}
-        planetRadius: 1000
-        cloudMinHeight: 400
-        cloudMaxHeight: 600
+        planetRadius: 10000
+        cloudMinHeight: 100
+        cloudMaxHeight: 500
         coarseStep: 50
         fineStepFactor: 0.125
         minCoarseSteps: 64
         maxCoarseSteps: 128
+        baseNoiseTex: {fileID: 11700000, guid: 4bbff9d27cc2a9f548213ffcdee24199, type: 2}
+        baseNoiseScale: 0.01
+        baseNoiseThreshold: 0.03
 --- !u!4 &520368799
 Transform:
   m_ObjectHideFlags: 0
@@ -568,13 +571,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1823688464}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0.13407265, y: 0, z: 0, w: 0.9909715}
   m_LocalPosition: {x: 0, y: 1, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -15.41, y: 0, z: 0}
 --- !u!114 &1823688468
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -744,7 +747,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Profile: {fileID: 11400000, guid: 8ba92e2dd7f884a0f88b98fa2d235fe7, type: 2}
-  m_StaticLightingSkyUniqueID: 4
+  m_StaticLightingSkyUniqueID: 0
   m_StaticLightingCloudsUniqueID: 0
   m_StaticLightingVolumetricClouds: 0
   bounces: 1

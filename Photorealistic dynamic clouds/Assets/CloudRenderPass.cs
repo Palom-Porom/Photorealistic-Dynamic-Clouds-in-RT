@@ -20,6 +20,11 @@ class CloudRenderPass : CustomPass
     public float fineStepFactor = 0.125f; // 1/8
     public int minCoarseSteps = 64;
     public int maxCoarseSteps = 128;
+    
+    [Header("Base Noise")]
+    public Texture3D baseNoiseTex;
+    public float baseNoiseScale = 0.001f;
+    public float baseNoiseThreshold = 0.5f;
 
     private RTHandle _target;
     private int _kernelIndex = -1;
@@ -68,6 +73,16 @@ class CloudRenderPass : CustomPass
         cmd.SetComputeFloatParam(cloudCompute, "_FineStepFactor", fineStepFactor);
         cmd.SetComputeIntParam(cloudCompute, "_CoarseStepsMin", maxCoarseSteps);
         cmd.SetComputeIntParam(cloudCompute, "_CoarseStepsMax", minCoarseSteps);
+        
+        cmd.SetComputeTextureParam(
+            cloudCompute,
+            _kernelIndex,
+            "_BaseNoiseTex",
+            baseNoiseTex
+        );
+
+        cmd.SetComputeFloatParam(cloudCompute, "_BaseNoiseScale", baseNoiseScale);
+        cmd.SetComputeFloatParam(cloudCompute, "_BaseNoiseThreshold", baseNoiseThreshold);
 
         Debug.Log($"Camera X: {cam.transform.position.x}, Camera Y: {cam.transform.position.y}, Camera Z: {cam.transform.position.z}");
 

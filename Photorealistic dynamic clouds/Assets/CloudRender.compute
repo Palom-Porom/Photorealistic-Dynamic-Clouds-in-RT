@@ -1,4 +1,5 @@
 #pragma kernel CSMain
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 
 RWTexture2D<float4> Result;
 
@@ -12,16 +13,17 @@ float _CoarseStep;
 float _FineStepFactor; 
 int _CoarseStepsMax;
 int _CoarseStepsMin;
+float _ShapeNoiseScale;
 
+TEXTURE3D(_ShapeNoise);
+SAMPLER(sampler_ShapeNoise);
+Texture3D<float4> _BaseNoiseTex;
+SamplerState sampler_BaseNoiseTex;
 
-bool RayIntersectCloudShell(
-    float3 camPos,
-    float3 dir,
-    float3 planetCenter,
-    float planetRadius,
-    float shellHeight,
-    out float3 hitPoint
-)
+float _BaseNoiseScale;
+float _BaseNoiseThreshold;
+
+bool RayIntersectCloudShell(float3 camPos, float3 dir, float3 planetCenter, float planetRadius, float shellHeight, out float3 hitPoint)
 {
     float R = planetRadius + shellHeight;
 
@@ -59,6 +61,28 @@ float HeightDensity(float realH, float minH, float maxH)
 
     float d = 1.0 - abs(realH - mid) / hlf;
     return saturate(d);
+}
+
+float SampleBaseDensity(float3 worldPos)
+{    
+    float heightMask = HeightDensity(worldPos.y, _CloudMinHeight, _CloudMaxHeight);
+
+    float3 uvw = worldPos * _BaseNoiseScale;
+    uvw = frac(uvw);
+    //int3 coord = int3(uvw * int3(128, 128, 128));
+    
+    //float noise = _BaseNoiseTex.Load(int4(coord, 0)).r;
+    float4 noise4 = _BaseNoiseTex.SampleLevel(sampler_BaseNoiseTex, uvw, 0);
+    float noise = noise4.r * noise4.g * noise4.b * noise4.a;
+    noise = saturate((noise - _BaseNoiseThreshold) / (1.0 - _BaseNoiseThreshold));
+    //return noise;
+    return heightMask * noise;
+    
+    //float noise = SAMPLE_TEXTURE3D(_ShapeNoise, sampler_ShapeNoise, uvw).r;
+
+    //noise = saturate((noise - _BaseNoiseThreshold) / (1.0 - _BaseNoiseThreshold));
+
+    //return heightMask * noise;
 }
 
 
@@ -153,15 +177,12 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         // Outside of cloud area
         if (realH < minCloudHeightLimiter || realH > maxCloudHeightLimiter)
         {
-            //float3 temp = firstPos;
-            //temp += worldDir * step;
-            //Result[id.xy] = float4(pos.y - firstPos.y, 0.0, 0.0, 1.0);
-            //return;
             break;
         }
 
         // Calculate with low accuracy
-        float density = HeightDensity(realH, _CloudMinHeight, _CloudMaxHeight);
+        
+        float density = SampleBaseDensity(float3(pos.x, realH, pos.z));
         bool hasCloud = (density > 0.0);
 
         // fine marching entrance
@@ -184,7 +205,10 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         }
 
         bool doAccumulate = usingFine && hasCloud;
-
+        
+        //Result[id.xy] = float4(density, density, density, 1);
+        //return;
+        
         // Calculate with high accuracy
         if (doAccumulate)
         {
