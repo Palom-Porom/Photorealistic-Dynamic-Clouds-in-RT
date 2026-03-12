@@ -19,9 +19,20 @@ TEXTURE3D(_ShapeNoise);
 SAMPLER(sampler_ShapeNoise);
 Texture3D<float4> _BaseNoiseTex;
 SamplerState sampler_BaseNoiseTex;
+Texture3D<float4> _DetailNoiseTex;
+SamplerState sampler_DetailNoiseTex;
+Texture2D<float3> _CurlNoiseTex;
+SamplerState sampler_CurlNoiseTex;
 
 float _BaseNoiseScale;
 float _BaseNoiseThreshold;
+float _DetailNoiseScale;
+float _DetailNoiseThreshold;
+float _CurlNoiseThreshold;
+
+float _Time;
+float _WindSpeed;
+float2 _WindDirection;
 
 bool RayIntersectCloudShell(float3 camPos, float3 dir, float3 planetCenter, float planetRadius, float shellHeight, out float3 hitPoint)
 {
@@ -63,20 +74,32 @@ float HeightDensity(float realH, float minH, float maxH)
     return saturate(d);
 }
 
-float SampleBaseDensity(float3 worldPos)
+float SampleBaseDensity(float3 worldPos, float realH)
 {    
-    float heightMask = HeightDensity(worldPos.y, _CloudMinHeight, _CloudMaxHeight);
+    float heightMask = HeightDensity(realH, _CloudMinHeight, _CloudMaxHeight);
 
     float3 uvw = worldPos * _BaseNoiseScale;
     uvw = frac(uvw);
     //int3 coord = int3(uvw * int3(128, 128, 128));
     
+    float3 wind = float3(_WindDirection.x, 0, _WindDirection.y);
+    float3 baseOffset = wind * _WindSpeed * _Time;
+    float3 detailOffset = wind * _WindSpeed * 4.0 * _Time;
+    
     //float noise = _BaseNoiseTex.Load(int4(coord, 0)).r;
-    float4 noise4 = _BaseNoiseTex.SampleLevel(sampler_BaseNoiseTex, uvw, 0);
-    float noise = noise4.r * noise4.g * noise4.b * noise4.a;
-    noise = saturate((noise - _BaseNoiseThreshold) / (1.0 - _BaseNoiseThreshold));
+    float4 baseNoise4 = _BaseNoiseTex.SampleLevel(sampler_BaseNoiseTex, uvw + baseOffset, 0);
+    float baseNoise = baseNoise4.r * baseNoise4.g * baseNoise4.b * baseNoise4.a;
+    baseNoise = saturate((baseNoise - _BaseNoiseThreshold) / (1.0 - _BaseNoiseThreshold));
     //return noise;
-    return heightMask * noise;
+    float4 detailNoise4 = _DetailNoiseTex.SampleLevel(sampler_DetailNoiseTex, uvw + detailOffset, 0);
+    float detailNoise = detailNoise4.g * detailNoise4.b * detailNoise4.a;
+    detailNoise = saturate((detailNoise - _DetailNoiseThreshold) / (1.0 - _DetailNoiseThreshold));
+    
+    float3 curlNoise3 = _CurlNoiseTex.SampleLevel(sampler_CurlNoiseTex, uvw.xy, 0).rgb;
+    float curlNoise = curlNoise3.r * curlNoise3.g * curlNoise3.b;
+    curlNoise = saturate((curlNoise - _CurlNoiseThreshold) / (1.0 - _CurlNoiseThreshold));
+    //return curlNoise;
+    return (heightMask * baseNoise) - detailNoise * curlNoise;
     
     //float noise = SAMPLE_TEXTURE3D(_ShapeNoise, sampler_ShapeNoise, uvw).r;
 
@@ -169,6 +192,9 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     const int emptyFineThreshold = 4;
     float step = 0;
 
+    //Result[id.xy] = float4(worldDir * 0.5 + 0.5, 1);
+    //return;
+
     while (coarseSteps < stepLimit)
     {
         planetToP = pos - planetCenter;
@@ -182,7 +208,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
         // Calculate with low accuracy
         
-        float density = SampleBaseDensity(float3(pos.x, realH, pos.z));
+        float density = SampleBaseDensity(pos, realH);
         bool hasCloud = (density > 0.0);
 
         // fine marching entrance

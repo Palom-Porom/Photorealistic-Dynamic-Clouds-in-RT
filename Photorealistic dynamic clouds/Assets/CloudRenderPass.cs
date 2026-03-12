@@ -1,3 +1,4 @@
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
@@ -26,6 +27,19 @@ class CloudRenderPass : CustomPass
     public float baseNoiseScale = 0.001f;
     public float baseNoiseThreshold = 0.5f;
 
+    [Header("Detail Noise")]
+    public Texture3D detailNoiseTex;
+    public float detailNoiseScale = 0.001f;
+    public float detailNoiseThreshold = 0.5f;
+    
+    [Header("Curl Noise")]
+    public Texture2D curlNoiseTex;
+    public float curlNoiseThreshold = 0.5f;
+    
+    [Header("Wind")]
+    public float2 windDirection = new float2(1f, 0f);
+    public float windSpeed = 5f;
+    
     private RTHandle _target;
     private int _kernelIndex = -1;
 
@@ -80,9 +94,27 @@ class CloudRenderPass : CustomPass
             "_BaseNoiseTex",
             baseNoiseTex
         );
+        cmd.SetComputeTextureParam(
+            cloudCompute,
+            _kernelIndex,
+            "_DetailNoiseTex",
+            detailNoiseTex
+        );
+        cmd.SetComputeTextureParam(
+            cloudCompute,
+            _kernelIndex,
+            "_CurlNoiseTex",
+            curlNoiseTex
+        );
 
         cmd.SetComputeFloatParam(cloudCompute, "_BaseNoiseScale", baseNoiseScale);
+        cmd.SetComputeFloatParam(cloudCompute, "_CurlNoiseThreshold", curlNoiseThreshold);
+        cmd.SetComputeFloatParam(cloudCompute, "_DetailNoiseThreshold", detailNoiseThreshold);
         cmd.SetComputeFloatParam(cloudCompute, "_BaseNoiseThreshold", baseNoiseThreshold);
+        
+        cmd.SetComputeFloatParam(cloudCompute, "_Time", Time.time);
+        cmd.SetComputeFloatParam(cloudCompute, "_WindSpeed", windSpeed);
+        cmd.SetComputeVectorParam(cloudCompute, "_WindDirection", new Vector4(windDirection.x, windDirection.y, 0, 0).normalized);
 
         Debug.Log($"Camera X: {cam.transform.position.x}, Camera Y: {cam.transform.position.y}, Camera Z: {cam.transform.position.z}");
 

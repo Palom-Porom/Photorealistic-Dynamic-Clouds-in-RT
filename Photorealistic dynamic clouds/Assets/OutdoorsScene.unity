@@ -468,8 +468,17 @@ MonoBehaviour:
         minCoarseSteps: 64
         maxCoarseSteps: 128
         baseNoiseTex: {fileID: 11700000, guid: 4bbff9d27cc2a9f548213ffcdee24199, type: 2}
-        baseNoiseScale: 0.01
-        baseNoiseThreshold: 0.03
+        baseNoiseScale: 0.001
+        baseNoiseThreshold: 0
+        detailNoiseTex: {fileID: 11700000, guid: f1a5076825d2b0aa293dbe6b03f45bac, type: 2}
+        detailNoiseScale: 0.1
+        detailNoiseThreshold: 0
+        curlNoiseTex: {fileID: 2800000, guid: 9acf5526c13f8c9028f7963bd74d3f18, type: 2}
+        curlNoiseThreshold: 0
+        windDirection:
+          x: 0.5
+          y: 0.5
+        windSpeed: 0.02
 --- !u!4 &520368799
 Transform:
   m_ObjectHideFlags: 0
