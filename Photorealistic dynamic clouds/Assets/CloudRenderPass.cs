@@ -36,6 +36,16 @@ class CloudRenderPass : CustomPass
     public Texture2D curlNoiseTex;
     public float curlNoiseThreshold = 0.5f;
     
+    [Header("Coverage")]
+    public Texture2D coverageTex;
+    public float coverageScale = 0.001f;
+    public float2 coverageOffset = 0.0f;
+    
+    [Header("Lightning")]
+    public float2 lightDir;
+    public Color lightColor;
+    public float lightStep = 25f;
+    
     [Header("Wind")]
     public float2 windDirection = new float2(1f, 0f);
     public float windSpeed = 5f;
@@ -106,11 +116,25 @@ class CloudRenderPass : CustomPass
             "_CurlNoiseTex",
             curlNoiseTex
         );
+        cmd.SetComputeTextureParam(
+            cloudCompute,
+            _kernelIndex,
+            "_CloudMapTex",
+            coverageTex
+        );
 
         cmd.SetComputeFloatParam(cloudCompute, "_BaseNoiseScale", baseNoiseScale);
         cmd.SetComputeFloatParam(cloudCompute, "_CurlNoiseThreshold", curlNoiseThreshold);
+        cmd.SetComputeFloatParam(cloudCompute, "_DetailNoiseScale", detailNoiseScale);
         cmd.SetComputeFloatParam(cloudCompute, "_DetailNoiseThreshold", detailNoiseThreshold);
         cmd.SetComputeFloatParam(cloudCompute, "_BaseNoiseThreshold", baseNoiseThreshold);
+        
+        cmd.SetComputeFloatParam(cloudCompute, "_CloudMapScale", coverageScale);
+        cmd.SetComputeVectorParam(cloudCompute, "_CloudMapOffset", new Vector4(coverageOffset.x, coverageOffset.y, 0, 0));
+        
+        cmd.SetComputeVectorParam(cloudCompute, "_LightDir", new Vector4(lightDir.x, 0, lightDir.y, 0).normalized);
+        cmd.SetComputeVectorParam(cloudCompute, "_LightColor", new Vector4(lightColor.r, lightColor.g, lightColor.b, lightColor.a));
+        cmd.SetComputeFloatParam(cloudCompute, "_LightStep", lightStep);
         
         cmd.SetComputeFloatParam(cloudCompute, "_Time", Time.time);
         cmd.SetComputeFloatParam(cloudCompute, "_WindSpeed", windSpeed);

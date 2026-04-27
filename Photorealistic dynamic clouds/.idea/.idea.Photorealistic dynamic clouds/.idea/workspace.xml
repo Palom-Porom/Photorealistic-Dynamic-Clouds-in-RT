@@ -3,8 +3,27 @@
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
+  <component name="CMakeProjectFlavorService">
+    <option name="flavorId" value="CMakePlainProjectFlavor" />
+  </component>
+  <component name="CMakeSettings">
+    <configurations />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="1543e8be-e477-40e0-a1e8-e4d357d5d9b0" name="Changes" comment="" />
+    <list default="true" id="1543e8be-e477-40e0-a1e8-e4d357d5d9b0" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.Photorealistic dynamic clouds/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Photorealistic dynamic clouds/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/CloudBaseNoise_128.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/CloudBaseNoise_128.raw" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/CloudDetailNoise_32.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/CloudDetailNoise_32.raw" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/CloudRender.compute" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/CloudRender.compute" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/CloudRenderPass.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/CloudRenderPass.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/CurlNoise_128.raw" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/CurlNoise_128_RGB.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/CurlNoise_128_RGB.raw" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/OutdoorsScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/OutdoorsScene.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/perlin 6 - 256x256.png" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -17,6 +36,8 @@
     <setting file="file://$PROJECT_DIR$/Assets/CloudRender.compute" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/CloudRenderPass.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Editor/Texture3DImporter.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Editor/TgaToVolumeTexture.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Editor/TgaToVolumeTextureDirect.cs" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
@@ -33,8 +54,12 @@
   &quot;keyToString&quot;: {
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
@@ -103,7 +128,18 @@
       <workItem from="1773268564867" duration="2747000" />
       <workItem from="1773272484467" duration="1966000" />
       <workItem from="1773276477488" duration="663000" />
-      <workItem from="1773277653967" duration="6626000" />
+      <workItem from="1773277653967" duration="9583000" />
+      <workItem from="1775997344137" duration="1086000" />
+      <workItem from="1776237838399" duration="2647000" />
+      <workItem from="1776675502473" duration="1467000" />
+      <workItem from="1776685073707" duration="3405000" />
+      <workItem from="1776688947749" duration="1945000" />
+      <workItem from="1776737488390" duration="5543000" />
+      <workItem from="1776802962592" duration="3014000" />
+      <workItem from="1776806354491" duration="5733000" />
+      <workItem from="1776815019276" duration="13831000" />
+      <workItem from="1776831048637" duration="4660000" />
+      <workItem from="1776845167243" duration="854000" />
     </task>
     <servers />
   </component>
