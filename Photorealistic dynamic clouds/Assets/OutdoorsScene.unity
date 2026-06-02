@@ -460,30 +460,119 @@ MonoBehaviour:
         m_Version: 0
         cloudCompute: {fileID: 7200000, guid: 1f645c489c7e35acf885757a7d8add9d, type: 3}
         blitMaterial: {fileID: 2100000, guid: 3968276e9c126dff387d7d3d2a001f6f, type: 2}
-        planetRadius: 10000
-        cloudMinHeight: 200
-        cloudMaxHeight: 700
+        planetRadius: 30000
+        cloudMinHeight: 700
+        cloudMaxHeight: 2000
         coarseStep: 50
         fineStepFactor: 0.125
         minCoarseSteps: 64
         maxCoarseSteps: 128
-        baseNoiseTex: {fileID: 11700000, guid: ad330a4a16b0c8192a04c5093da3e5cc, type: 2}
+        baseNoiseTex: {fileID: 11700000, guid: e49f5941e5eb150beaf5939aa7201a35, type: 2}
         baseNoiseScale: 0.001
         baseNoiseThreshold: 0.79
-        detailNoiseTex: {fileID: 11700000, guid: 37be527857c796396b59eb486e28ed8c, type: 2}
+        detailNoiseTex: {fileID: 11700000, guid: c9d8b399702146130a6c6fb626d97bc9, type: 2}
         detailNoiseScale: 0.01
         detailNoiseThreshold: 0
         curlNoiseTex: {fileID: 2800000, guid: 9bf8fb4230d67668aa216337ef3826d0, type: 3}
         curlNoiseThreshold: 0
-        coverageTex: {fileID: 2800000, guid: 583069ce7034a8382bf58d791fbfe099, type: 3}
-        coverageScale: 0.0003
+        coverageTex: {fileID: 2800000, guid: eeec46d5653425533b649e596c7e3e77, type: 3}
+        coverageScale: 0.0001
         coverageOffset:
-          x: -9.5
-          y: 0
-        lightDir:
-          x: 0
-          y: 1
-        lightColor: {r: 0.8396226, g: 0.79433817, b: 0.5584282, a: 0}
+          x: -6.16
+          y: 8.37
+        timeOfDay: 0
+        autoPlayTime: 0
+        dayDurationSeconds: 60
+        lightColorGradient:
+          serializedVersion: 2
+          key0: {r: 1, g: 0.43867922, b: 0.66851366, a: 1}
+          key1: {r: 1, g: 1, b: 1, a: 1}
+          key2: {r: 0.8679245, g: 0.54864013, b: 0.3234247, a: 0}
+          key3: {r: 1, g: 1, b: 1, a: 0}
+          key4: {r: 1, g: 1, b: 1, a: 0}
+          key5: {r: 0, g: 0, b: 0, a: 0}
+          key6: {r: 0, g: 0, b: 0, a: 0}
+          key7: {r: 0, g: 0, b: 0, a: 0}
+          ctime0: 0
+          ctime1: 32575
+          ctime2: 65535
+          ctime3: 65535
+          ctime4: 65535
+          ctime5: 0
+          ctime6: 0
+          ctime7: 0
+          atime0: 0
+          atime1: 65535
+          atime2: 0
+          atime3: 0
+          atime4: 0
+          atime5: 0
+          atime6: 0
+          atime7: 0
+          m_Mode: 0
+          m_ColorSpace: 0
+          m_NumColorKeys: 3
+          m_NumAlphaKeys: 2
+        zenithColorGradient:
+          serializedVersion: 2
+          key0: {r: 0.18760064, g: 0.17475079, b: 0.4811321, a: 1}
+          key1: {r: 0.16313636, g: 0.35584164, b: 0.8867924, a: 1}
+          key2: {r: 0.30411178, g: 0.6142812, b: 0.9622642, a: 0}
+          key3: {r: 0.26032397, g: 0.45656827, b: 0.8490566, a: 0}
+          key4: {r: 0.16113387, g: 0.18072559, b: 0.4811321, a: 0}
+          key5: {r: 0, g: 0, b: 0, a: 0}
+          key6: {r: 0, g: 0, b: 0, a: 0}
+          key7: {r: 0, g: 0, b: 0, a: 0}
+          ctime0: 0
+          ctime1: 12722
+          ctime2: 33539
+          ctime3: 52235
+          ctime4: 65535
+          ctime5: 0
+          ctime6: 0
+          ctime7: 0
+          atime0: 0
+          atime1: 65535
+          atime2: 0
+          atime3: 0
+          atime4: 0
+          atime5: 0
+          atime6: 0
+          atime7: 0
+          m_Mode: 0
+          m_ColorSpace: 0
+          m_NumColorKeys: 5
+          m_NumAlphaKeys: 2
+        horizonColorGradient:
+          serializedVersion: 2
+          key0: {r: 0.6698113, g: 0.43916875, b: 0.47914675, a: 1}
+          key1: {r: 0.54509807, g: 0.61960787, b: 0.7058824, a: 1}
+          key2: {r: 0.58147913, g: 0.61880666, b: 0.6886792, a: 0}
+          key3: {r: 0.54991806, g: 0.6195017, b: 0.70360315, a: 0}
+          key4: {r: 0.6981132, g: 0.5761468, b: 0.46431115, a: 0}
+          key5: {r: 0.6981132, g: 0.5761468, b: 0.46431115, a: 0}
+          key6: {r: 0.6981132, g: 0.5761468, b: 0.46431115, a: 0}
+          key7: {r: 0, g: 0, b: 0, a: 0}
+          ctime0: 0
+          ctime1: 12914
+          ctime2: 33153
+          ctime3: 50501
+          ctime4: 65535
+          ctime5: 65535
+          ctime6: 65535
+          ctime7: 0
+          atime0: 0
+          atime1: 65535
+          atime2: 0
+          atime3: 0
+          atime4: 0
+          atime5: 0
+          atime6: 0
+          atime7: 0
+          m_Mode: 0
+          m_ColorSpace: 0
+          m_NumColorKeys: 5
+          m_NumAlphaKeys: 2
         lightStep: 10
         windDirection:
           x: 0.5
@@ -497,8 +586,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 520368797}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.3746, y: -0, z: 1.17817}
+  m_LocalRotation: {x: -0, y: 1, z: -0, w: 0}
+  m_LocalPosition: {x: -358.20856, y: 282.2841, z: 405.53864}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

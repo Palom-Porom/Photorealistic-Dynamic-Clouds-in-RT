@@ -1,103 +1,134 @@
 using UnityEngine;
 using UnityEditor;
 using System.IO;
+using System.Collections.Generic;
 
-public class TgaToVolumeTextureDirect : EditorWindow
+public class RawToVolumeTextureDirect : EditorWindow
 {
-    [MenuItem("Tools/Create 3D Texture from TGA Atlas (Direct Read)")]
-    static void CreateVolumeTextureDirect()
+    [MenuItem("Tools/Create 3D Texture from RAW (Manual Mips)")]
+    static void CreateVolumeTextureDirectFromRaw()
     {
-        string path = EditorUtility.OpenFilePanel("Select TGA Atlas", Application.dataPath, "tga");
+        // Изменяем фильтр на выбор файлов .raw
+        string path = EditorUtility.OpenFilePanel("Select RAW 3D Texture", Application.dataPath, "raw");
         if (string.IsNullOrEmpty(path)) return;
 
-        byte[] tgaData = File.ReadAllBytes(path);
-        if (tgaData.Length < 18)
+        byte[] rawData = File.ReadAllBytes(path);
+
+        // --- Задаем параметры куба 256х256х256 ---
+        int size = 256; 
+        int channels = 4; // RGBA
+        int expectedDataSize = size * size * size * channels; // 67 108 864 байт (64 МБ)
+
+        // Безопасная проверка на соответствие размера файла
+        if (rawData.Length != expectedDataSize)
         {
-            Debug.LogError("Invalid TGA file.");
+            Debug.LogError($"Неверный размер RAW файла. Ожидалось {expectedDataSize} байт для {size}³, получено {rawData.Length} байт.");
             return;
         }
 
-        // --- Парсинг заголовка TGA ---
-        int idLength = tgaData[0];
-        int colorMapType = tgaData[1];
-        int imageType = tgaData[2];
-        int width = tgaData[12] | (tgaData[13] << 8);
-        int height = tgaData[14] | (tgaData[15] << 8);
-        int pixelDepth = tgaData[16];
-        int imageDescriptor = tgaData[17];
+        Debug.Log($"RAW файл успешно прочитан. Размер структуры: {size} x {size} x {size}");
 
-        // Поддерживаем только несжатые 32-битные truecolor (тип 2)
-        if (imageType != 2 || pixelDepth != 32)
+        // --- Создаём 3D текстуру с поддержкой мип-уровней ---
+        Texture3D volume = new Texture3D(size, size, size, TextureFormat.RGBA32, true); // mipChain = true
+        volume.filterMode = FilterMode.Trilinear; // Трилинейная фильтрация для плавных переходов LOD в HDRP
+        volume.wrapMode = TextureWrapMode.Repeat; //
+
+        // Определяем количество мип-уровней (для размера 256 это будет 9 уровней)
+        int mipCount = Mathf.FloorToInt(Mathf.Log(size, 2)) + 1; //
+        Debug.Log($"Создаётся 3D текстура {size}³ с {mipCount} мип-уровнями"); //
+
+        // Массив массивов пикселей для каждого мип-уровня
+        List<Color[]> mipPixels = new List<Color[]>(mipCount); //
+
+        // --- Заполнение мип-уровня 0 (исходные данные из RAW) ---
+        Color[] level0Pixels = new Color[size * size * size]; //
+        
+        // Читаем напрямую из трехмерного пространства RAW (безбарьерный линейный обход)
+        for (int z = 0; z < size; z++) //
         {
-            Debug.LogError($"Поддерживаются только несжатые 32-битные TGA. Тип: {imageType}, глубина: {pixelDepth}");
-            return;
-        }
-
-        Debug.Log($"TGA размер: {width} x {height}");
-
-        // --- Вычисляем начало пиксельных данных ---
-        int dataOffset = 18 + idLength;
-        if (colorMapType == 1)
-        {
-            int cmapLength = tgaData[5] | (tgaData[6] << 8);
-            int cmapEntrySize = tgaData[7];
-            int cmapBytes = cmapLength * (cmapEntrySize / 8);
-            dataOffset += cmapBytes;
-        }
-
-        int expectedDataSize = width * height * 4;
-        if (tgaData.Length - dataOffset != expectedDataSize)
-        {
-            Debug.LogError($"Неверный размер данных. Ожидалось {expectedDataSize}, получено {tgaData.Length - dataOffset}");
-            return;
-        }
-
-        // --- Проверяем структуру атласа ---
-        int size = height; // для атласа 16384x128 размер куба = 128
-        if (width != size * size)
-        {
-            Debug.LogError($"Атлас имеет неверный формат: ширина {width} != {size}*{size}={size * size}");
-            return;
-        }
-
-        // --- Создаём 3D текстуру ---
-        Texture3D volume = new Texture3D(size, size, size, TextureFormat.RGBA32, false);
-        volume.filterMode = FilterMode.Bilinear;
-        volume.wrapMode = TextureWrapMode.Repeat;
-
-        Color[] volumePixels = new Color[size * size * size];
-
-        for (int z = 0; z < size; z++)
-        {
-            for (int y = 0; y < size; y++)
+            for (int y = 0; y < size; y++) //
             {
-                for (int x = 0; x < size; x++)
+                for (int x = 0; x < size; x++) //
                 {
-                    int atlasX = x + z * size;
-                    int atlasY = y;
-                    int pixelIndex = (atlasY * width + atlasX) * 4;
+                    // Вычисляем индекс в плоском байтовом массиве RAW
+                    int pixelIndex = (x + y * size + z * size * size) * 4;
 
-                    // TGA хранит пиксели в порядке B, G, R, A
-                    byte b = tgaData[dataOffset + pixelIndex];
-                    byte g = tgaData[dataOffset + pixelIndex + 1];
-                    byte r = tgaData[dataOffset + pixelIndex + 2];
-                    byte a = tgaData[dataOffset + pixelIndex + 3];
+                    // Извлекаем каналы в правильном порядке RGBA (как они были записаны в C++)
+                    byte r = rawData[pixelIndex];
+                    byte g = rawData[pixelIndex + 1];
+                    byte b = rawData[pixelIndex + 2];
+                    byte a = rawData[pixelIndex + 3];
 
-                    volumePixels[x + y * size + z * size * size] = new Color32(r, g, b, a);
+                    level0Pixels[x + y * size + z * size * size] = new Color32(r, g, b, a); //
                 }
             }
         }
+        mipPixels.Add(level0Pixels); //
 
-        volume.SetPixels(volumePixels);
-        volume.Apply();
+        // --- Ваша оригинальная генерация остальных мип-уровней (даунсэмплинг 2x2x2) ---
+        // Этот блок полностью сохранен, так как он идеально работает с массивом структур Color в памяти
+        int prevSize = size; //
+        Color[] prevPixels = level0Pixels; //
+
+        for (int level = 1; level < mipCount; level++) //
+        {
+            int curSize = Mathf.Max(1, prevSize / 2); //
+            Color[] curPixels = new Color[curSize * curSize * curSize]; //
+
+            for (int z = 0; z < curSize; z++) //
+            {
+                for (int y = 0; y < curSize; y++) //
+                {
+                    for (int x = 0; x < curSize; x++) //
+                    {
+                        // Координаты в предыдущем мип-уровне (2x2x2 блок)
+                        int x0 = x * 2; //
+                        int y0 = y * 2; //
+                        int z0 = z * 2; //
+
+                        // Усредняем 8 соседних вокселей
+                        Color sum = Color.clear; //
+                        for (int dz = 0; dz < 2; dz++) //
+                        {
+                            for (int dy = 0; dy < 2; dy++) //
+                            {
+                                for (int dx = 0; dx < 2; dx++) //
+                                {
+                                    int nx = x0 + dx; //
+                                    int ny = y0 + dy; //
+                                    int nz = z0 + dz; //
+                                    if (nx < prevSize && ny < prevSize && nz < prevSize) //
+                                    {
+                                        sum += prevPixels[nx + ny * prevSize + nz * prevSize * prevSize]; //
+                                    }
+                                }
+                            }
+                        }
+                        curPixels[x + y * curSize + z * curSize * curSize] = sum / 8.0f; //
+                    }
+                }
+            }
+
+            mipPixels.Add(curPixels); //
+            prevPixels = curPixels; //
+            prevSize = curSize; //
+        }
+
+        // --- Записываем все мип-уровни в текстуру ---
+        for (int level = 0; level < mipCount; level++) //
+        {
+            volume.SetPixels(mipPixels[level], level); //
+        }
+
+        volume.Apply(false, false); // Изменено на false во втором параметре (мы вручную передали все мипы, Unity не нужно их пересчитывать стандартными методами)
 
         // --- Сохраняем как .asset ---
-        string savePath = EditorUtility.SaveFilePanelInProject("Save 3D Texture", "CloudBaseShape", "asset", "");
-        if (!string.IsNullOrEmpty(savePath))
+        string savePath = EditorUtility.SaveFilePanelInProject("Save 3D Texture", "CloudBaseShape256", "asset", ""); //
+        if (!string.IsNullOrEmpty(savePath)) //
         {
-            AssetDatabase.CreateAsset(volume, savePath);
-            AssetDatabase.SaveAssets();
-            Debug.Log($"3D текстура сохранена: {savePath}");
+            AssetDatabase.CreateAsset(volume, savePath); //
+            AssetDatabase.SaveAssets(); //
+            Debug.Log($"3D RAW текстура сохранена: {savePath} (мип-уровни: {mipCount})"); //
         }
     }
-}
+}   

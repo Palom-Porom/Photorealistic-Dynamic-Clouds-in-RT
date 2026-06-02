@@ -1,3 +1,4 @@
+using System;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -41,9 +42,18 @@ class CloudRenderPass : CustomPass
     public float coverageScale = 0.001f;
     public float2 coverageOffset = 0.0f;
     
-    [Header("Lightning")]
-    public float2 lightDir;
-    public Color lightColor;
+    [Header("Day/Night Cycle")]
+    [Range(0f, 1f)]
+    public float timeOfDay = 0.5f; // 0 -> 0.5 -> 1 = Рассвет -> Полдень -> Закат
+    public bool autoPlayTime = false;
+    public float dayDurationSeconds = 60f; 
+    
+    [Header("Lightning & Sky")]
+    public Gradient lightColorGradient;
+    public Gradient zenithColorGradient;
+    public Gradient horizonColorGradient;
+    // public float3 lightDir;
+    // public Color lightColor;
     public float lightStep = 25f;
     
     [Header("Wind")]
@@ -52,6 +62,14 @@ class CloudRenderPass : CustomPass
     
     private RTHandle _target;
     private int _kernelIndex = -1;
+
+    private float currentTime = 0f;
+    private float _lastTime = 0f;
+    private float morningAngle;
+    private float eveningAngle;
+    private float angle;
+    private float3 _computedLightDir;
+    private Color _computedLightColor;
 
     protected override void Setup(ScriptableRenderContext renderContext, CommandBuffer cmd)
     {
@@ -71,8 +89,36 @@ class CloudRenderPass : CustomPass
             useDynamicScale: true,
             name: "CloudRT"
         );
+        
+        _lastTime = Application.isPlaying ? Time.time : Time.realtimeSinceStartup;
+        morningAngle = Mathf.Asin(-0.1f); 
+        eveningAngle = Mathf.PI - morningAngle;
+        angle = Mathf.Lerp(morningAngle, eveningAngle, timeOfDay);
     }
 
+    private void UpdateDayNightCycle()
+    {
+        currentTime = Application.isPlaying ? Time.time : Time.realtimeSinceStartup;
+        float deltaTime = currentTime - _lastTime;
+        _lastTime = currentTime;
+
+        if (autoPlayTime)
+        {
+            timeOfDay += deltaTime / dayDurationSeconds;
+            if (timeOfDay > 1.0f)
+                timeOfDay = 0.0f;
+        }
+
+        morningAngle = Mathf.Acos(-1.0f); 
+        eveningAngle = Mathf.Acos(1.0f);
+        angle = Mathf.Lerp(morningAngle, eveningAngle, timeOfDay);
+        
+        _computedLightDir = math.normalizesafe(new float3(-Mathf.Cos(angle), Mathf.Sin(angle), 0.2f));
+        _computedLightColor = lightColorGradient != null ? lightColorGradient.Evaluate(angle) : Color.white;
+
+        // Debug.Log($"morning = {morningAngle}; evening = {eveningAngle}; angle = {angle}; dir = {_computedLightDir}");
+    }
+    
     protected override void Execute(CustomPassContext ctx)
     {
         if (cloudCompute == null || blitMaterial == null)
@@ -80,6 +126,8 @@ class CloudRenderPass : CustomPass
 
         var cmd = ctx.cmd;
         var cam = ctx.hdCamera.camera;
+        
+        UpdateDayNightCycle();
 
         cmd.SetComputeTextureParam(cloudCompute, _kernelIndex, "Result", _target);
 
@@ -132,21 +180,26 @@ class CloudRenderPass : CustomPass
         cmd.SetComputeFloatParam(cloudCompute, "_CloudMapScale", coverageScale);
         cmd.SetComputeVectorParam(cloudCompute, "_CloudMapOffset", new Vector4(coverageOffset.x, coverageOffset.y, 0, 0));
         
-        cmd.SetComputeVectorParam(cloudCompute, "_LightDir", new Vector4(lightDir.x, 0, lightDir.y, 0).normalized);
-        cmd.SetComputeVectorParam(cloudCompute, "_LightColor", new Vector4(lightColor.r, lightColor.g, lightColor.b, lightColor.a));
+        cmd.SetComputeVectorParam(cloudCompute, "_LightDir", new Vector4(_computedLightDir.x, _computedLightDir.y, _computedLightDir.z, 0).normalized);
+        cmd.SetComputeVectorParam(cloudCompute, "_LightColor", new Vector4(_computedLightColor.r, _computedLightColor.g, _computedLightColor.b, _computedLightColor.a));
         cmd.SetComputeFloatParam(cloudCompute, "_LightStep", lightStep);
         
-        cmd.SetComputeFloatParam(cloudCompute, "_Time", Time.time);
+        Color zenith = zenithColorGradient != null ? zenithColorGradient.Evaluate(timeOfDay) : new Color(0.1f, 0.35f, 0.8f);
+        Color horizon = horizonColorGradient != null ? horizonColorGradient.Evaluate(timeOfDay) : new Color(0.6f, 0.7f, 0.85f);
+        cmd.SetComputeVectorParam(cloudCompute, "_ZenithColor", new Vector4(zenith.r, zenith.g, zenith.b, 1f));
+        cmd.SetComputeVectorParam(cloudCompute, "_HorizonColor", new Vector4(horizon.r, horizon.g, horizon.b, 1f));
+        
+        cmd.SetComputeFloatParam(cloudCompute, "_Time", currentTime);
         cmd.SetComputeFloatParam(cloudCompute, "_WindSpeed", windSpeed);
         cmd.SetComputeVectorParam(cloudCompute, "_WindDirection", new Vector4(windDirection.x, windDirection.y, 0, 0).normalized);
 
-        Debug.Log($"Camera X: {cam.transform.position.x}, Camera Y: {cam.transform.position.y}, Camera Z: {cam.transform.position.z}");
+        // Debug.Log($"Camera X: {cam.transform.position.x}, Camera Y: {cam.transform.position.y}, Camera Z: {cam.transform.position.z}");
 
         int x = Mathf.CeilToInt(_target.rt.width / 8.0f);
         int y = Mathf.CeilToInt(_target.rt.height / 8.0f);
         cmd.DispatchCompute(cloudCompute, _kernelIndex, x, y, 1);
 
-        Debug.Log($"{x} and {y}");
+        // Debug.Log($"{x} and {y}");
         
         blitMaterial.SetTexture("_Source", _target);
         HDUtils.DrawFullScreen(

@@ -12,17 +12,12 @@
   <component name="ChangeListManager">
     <list default="true" id="1543e8be-e477-40e0-a1e8-e4d357d5d9b0" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Photorealistic dynamic clouds/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Photorealistic dynamic clouds/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/CloudBaseNoise_128.asset" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/CloudBaseNoise_128.raw" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/CloudDetailNoise_32.asset" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/CloudDetailNoise_32.raw" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/CloudRender.compute" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/CloudRender.compute" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/CloudRenderPass.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/CloudRenderPass.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/CurlNoise_128.raw" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/CurlNoise_128_RGB.asset" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/CurlNoise_128_RGB.raw" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Editor/TgaToVolumeTextureDirect.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Editor/TgaToVolumeTextureDirect.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/OutdoorsScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/OutdoorsScene.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/perlin 6 - 256x256.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Packages/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/manifest.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Packages/packages-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/packages-lock.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,6 +34,10 @@
     <setting file="file://$PROJECT_DIR$/Assets/Editor/TgaToVolumeTexture.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Editor/TgaToVolumeTextureDirect.cs" root0="SKIP_HIGHLIGHTING" />
   </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
@@ -53,7 +52,9 @@
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
@@ -140,6 +141,18 @@
       <workItem from="1776815019276" duration="13831000" />
       <workItem from="1776831048637" duration="4660000" />
       <workItem from="1776845167243" duration="854000" />
+      <workItem from="1779563674151" duration="5787000" />
+      <workItem from="1779572675290" duration="3108000" />
+      <workItem from="1779576544747" duration="4422000" />
+      <workItem from="1779613509002" duration="2580000" />
+      <workItem from="1779738499259" duration="10764000" />
+      <workItem from="1779928316013" duration="1814000" />
+      <workItem from="1779931186112" duration="8119000" />
+      <workItem from="1780078564740" duration="52694000" />
+      <workItem from="1780267019174" duration="2880000" />
+      <workItem from="1780335634248" duration="6644000" />
+      <workItem from="1780413904955" duration="177000" />
+      <workItem from="1780414169741" duration="5917000" />
     </task>
     <servers />
   </component>
