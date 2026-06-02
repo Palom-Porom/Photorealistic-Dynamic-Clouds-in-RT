@@ -47,7 +47,7 @@ float2 _CloudMapOffset;
 float3 _LightDir;   // Направление на солнце 
 float3 _LightColor; // Цвет солнца
 float _LightStep;   // Длина шага при маршинге к свету
-float3 ZenithColor;
+float3 _ZenithColor;
 float3 _HorizonColor;
 
 
@@ -85,7 +85,7 @@ bool RayIntersectCloudShell(float3 camPos, float3 dir, float3 planetCenter, floa
 
 float remap(float v, float a, float b, float c, float d)
 {
-    return c + (v - a) * (d - c) / (b - a);
+    return c + (v - a) * (d - c) / (b - a); 
 }
 
 float clampRemap(float v, float a, float b, float c, float d)
@@ -111,8 +111,8 @@ float HeightGradient_Stratus(float h)
 
 float HeightGradient_Cumulus(float h)
 {
-    return saturate(remap(h, 0.0, 0.4, 0.0, 1.0) *
-                    remap(h, 0.6, 1.0, 1.0, 0.0));
+    return saturate(remap(h, 0.0, 0.2, 0.0, 1.0) *
+                    remap(h, 0.65, 1.0, 1.0, 0.0));
 }
 
 float HeightDensity(float h_norm, float cloudType)
@@ -146,28 +146,30 @@ float sample_cloud_density(float3 worldPos, float realH, int lod, bool doDetaile
     float3 detailOffset = wind * _WindSpeed * 4.0 * _Time;
     
     float4 cloudData = _CloudMapTex.SampleLevel(sampler_CloudMapTex, cloudMapUV, 0);
-    // float coverage = remap (cloudData.g, 0.1, 1.0, 0.0, 1.0);
+    // float coverage = remap (cloudData.r, 0.1, 0.8, 0.0, 1.0);
     float coverage = cloudData.r;
     // coverage = saturate(coverage * 0.7f);
     
-    float cloudType = 1.0 - cloudData.b;
+    // float cloudType = 1.0 - cloudData.b;
+    float cloudType = 1.0;
     float heightMask = HeightDensity(h_norm, cloudType);
     
     float4 baseNoise4 = _BaseNoiseTex.SampleLevel(sampler_BaseNoiseTex, uvw + baseOffset, lod) ;
     // return remap (baseNoise4.r, 0.59, 1.0, 0.0, 1.0);
-    float erosion = (baseNoise4.g * 0.125) + (baseNoise4.b * 0.325) + (baseNoise4.a * 0.225);
+    float erosion = (baseNoise4.g * 0.125) + (baseNoise4.b * 0.0125) + (baseNoise4.a * 0.0125);
     // erosion = remap (erosion, 0.6f, 1.0f, 0.0f, 1.0f);
     float baseNoise = remap(baseNoise4.r, -(1 - erosion), 1.0, 0.0, 1.0);
     // return baseNoise;
     baseNoise *= heightMask;
     baseNoise = remap(baseNoise, 1.0 - coverage, 1.0, 0.0, 1.0);
     baseNoise *= coverage;
+    // baseNoise *= coverage;
     // return baseNoise4.r*0.0525;
     // baseNoise = baseNoise4.r * baseNoise4.g * baseNoise4.b * baseNoise4.a;
     // baseNoise = saturate((baseNoise - _BaseNoiseThreshold) / (1.0 - _BaseNoiseThreshold));
     
     float final_cloud = baseNoise;
-    // return final_cloud;
+    return final_cloud;
     
     if (doDetailed)
     {
@@ -184,7 +186,7 @@ float sample_cloud_density(float3 worldPos, float realH, int lod, bool doDetaile
         // h_norm = GetHeightFractionForPoint(worldPos, _CloudMinHeight, _CloudMaxHeight);
         // float detailedErosionModifier = lerp (detailedErosion_fBm, 1 - detailedErosion_fBm, saturate(h_norm * 10.0));
         
-        final_cloud = remap(baseNoise, detailedErosion_fBm * 0.1, 1.0, 0.0, 1.0);
+        final_cloud = remap(baseNoise, detailedErosion_fBm * 0.15, 1.0, 0.0, 1.0);
     }
     
     // return abs(final_cloud);
@@ -219,15 +221,15 @@ float HenyeyGreenstein(float cos_angle, float g)
 // Двойная фазовая функция (для эффекта "серебряной подкладки" - Silver Lining)
 float DualHenyeyGreenstein(float cos_angle)
 {
-    float g_forward = 0.5; // Насколько сильно свет рассеивается вперед
+    float g_forward = 0.3; // Насколько сильно свет рассеивается вперед
     float phase_forward = HenyeyGreenstein(cos_angle, g_forward);
     
-    float g_backward = -0.2;
+    float g_backward = -0.3;
     float phase_backward = HenyeyGreenstein(cos_angle, g_backward);
     
     float main_phase = lerp (phase_backward, phase_forward, 0.7); 
     
-    float g_silver = 0.15;
+    float g_silver = 0.1;
     float silver_intensity = 0.1;
     float phase_silver = HenyeyGreenstein(cos_angle, 0.99 - g_silver);
     
@@ -299,8 +301,8 @@ float GetLightEnergy(float3 p, float height_fraction, float dl, float ds_loded, 
     ds_loded = saturate(ds_loded);
     // float depth_probability = pow(ds_loded, 2.0);
     // float depth_probability = 0.05 + pow(ds_loded, clampRemap(height_fraction, 0.3, 0.85, 0.5, 2.0));
-    float depth_probability = lerp(0.02 + pow(ds_loded, remap(height_fraction, 0.0, 0.85, 0.55, 1.5)), 1.0, saturate(dl / _LightStep));
-    float vertical_probability = pow(remap(height_fraction, 0.0, 0.03, 0.5, 1.0), 0.8);
+    float depth_probability = lerp(0.03 + pow(ds_loded, remap(height_fraction, 0.0, 0.85, 0.5, 2.5)), 1.0, saturate(dl / _LightStep));
+    float vertical_probability = pow(remap(height_fraction, 0.0, 0.03, 0.5, 1.0), 0.9);
     float in_scatter_probability = depth_probability * vertical_probability;
 
     // Итоговая энергия с учетом фазовой функции
@@ -417,7 +419,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     
         // Calculate with low accuracy
         
-        float density = sample_cloud_density(pos, realH, 4 * float(!usingFine), usingFine);
+        float density = sample_cloud_density(pos, realH, 3 * float(!usingFine), usingFine);
         bool hasCloud = (density > 0.0);
     
         // fine marching entrance
@@ -460,7 +462,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
             // Плотность к источнику света (оптическая толщина)
             
             float density_to_light = SampleCloudDensityAlongCone(pos, _LightDir);
-            float ds_loded = sample_cloud_density(pos, realH, 1, false);
+            float ds_loded = sample_cloud_density(pos, realH, 4, false);
             
             // Получаем энергию света для данной точки
             float light_energy = GetLightEnergy(pos, height_fraction, density_to_light, ds_loded, phase_prob, cos_angle, step);
@@ -501,12 +503,10 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     // cloudColor = float3 (alpha, alpha, alpha);
 
     // Adding distanceFog and SkyColor
-    float3 zenithColor = ZenithColor * (_LightColor * 0.5 + 0.5);
-    float3 horizonColor = _HorizonColor * (_LightColor * 0.30 + 0.7);
-    float3 finalColor = cloudColor + (1.0 - alpha) * zenithColor;
-    float fogDensity = 0.00025;
+    float3 finalColor = cloudColor + (1.0 - alpha) * _ZenithColor;
+    float fogDensity = 0.0002;
     float fogFactor = saturate(exp(-length(pos - _CameraPosition) * fogDensity));
-    finalColor = lerp(horizonColor, finalColor, fogFactor);
+    finalColor = lerp(_HorizonColor, finalColor, fogFactor);
     
 
     Result[id.xy] = float4(finalColor, 1.0);

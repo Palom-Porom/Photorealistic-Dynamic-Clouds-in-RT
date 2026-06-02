@@ -14,10 +14,7 @@
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Photorealistic dynamic clouds/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Photorealistic dynamic clouds/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/CloudRender.compute" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/CloudRender.compute" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/CloudRenderPass.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/CloudRenderPass.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Editor/TgaToVolumeTextureDirect.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Editor/TgaToVolumeTextureDirect.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/OutdoorsScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/OutdoorsScene.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Packages/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/manifest.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Packages/packages-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/packages-lock.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -153,6 +150,8 @@
       <workItem from="1780335634248" duration="6644000" />
       <workItem from="1780413904955" duration="177000" />
       <workItem from="1780414169741" duration="5917000" />
+      <workItem from="1780430551724" duration="4172000" />
+      <workItem from="1780437305733" duration="3290000" />
     </task>
     <servers />
   </component>

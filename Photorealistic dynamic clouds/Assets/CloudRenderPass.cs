@@ -71,6 +71,11 @@ class CloudRenderPass : CustomPass
     private float3 _computedLightDir;
     private Color _computedLightColor;
 
+    float remap(float v, float a, float b, float c, float d)
+    {
+        return c + (v - a) * (d - c) / (b - a);
+    }
+    
     protected override void Setup(ScriptableRenderContext renderContext, CommandBuffer cmd)
     {
         _kernelIndex = cloudCompute.FindKernel("CSMain");
@@ -111,12 +116,12 @@ class CloudRenderPass : CustomPass
 
         morningAngle = Mathf.Acos(-1.0f); 
         eveningAngle = Mathf.Acos(1.0f);
-        angle = Mathf.Lerp(morningAngle, eveningAngle, timeOfDay);
+        angle = Mathf.Lerp(eveningAngle, morningAngle, timeOfDay);
         
         _computedLightDir = math.normalizesafe(new float3(-Mathf.Cos(angle), Mathf.Sin(angle), 0.2f));
-        _computedLightColor = lightColorGradient != null ? lightColorGradient.Evaluate(angle) : Color.white;
+        _computedLightColor = lightColorGradient != null ? lightColorGradient.Evaluate(remap(angle, 0.0f, 3.14f, 0.0f, 1.0f)) : Color.white;
 
-        // Debug.Log($"morning = {morningAngle}; evening = {eveningAngle}; angle = {angle}; dir = {_computedLightDir}");
+        // Debug.Log($"morning = {morningAngle}; evening = {eveningAngle}; angle = {angle}; dir = {_computedLightColor}");
     }
     
     protected override void Execute(CustomPassContext ctx)
