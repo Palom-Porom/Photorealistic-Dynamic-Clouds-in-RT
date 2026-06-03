@@ -105,8 +105,8 @@ float GetHeightFractionForPoint(float realH, float minH, float maxH)
 
 float HeightGradient_Stratus(float h)
 {
-    return saturate(remap(h, 0.0, 0.05, 0.0, 1.0) *
-                    remap(h, 0.1, 0.2, 1.0, 0.0));
+    return saturate(remap(h, 0.0, 0.1, 0.0, 1.0) *
+                    remap(h, 0.2, 0.3, 1.0, 0.0));
 }
 
 float HeightGradient_Cumulus(float h)
@@ -146,7 +146,7 @@ float sample_cloud_density(float3 worldPos, float realH, int lod, bool doDetaile
     float3 detailOffset = wind * _WindSpeed * 4.0 * _Time;
     
     float4 cloudData = _CloudMapTex.SampleLevel(sampler_CloudMapTex, cloudMapUV, 0);
-    // float coverage = remap (cloudData.r, 0.1, 0.8, 0.0, 1.0);
+    // float coverage = remap (cloudData.r, 0.15, 1.0, 0.0, 1.0);
     float coverage = cloudData.r;
     // coverage = saturate(coverage * 0.7f);
     
@@ -156,20 +156,21 @@ float sample_cloud_density(float3 worldPos, float realH, int lod, bool doDetaile
     
     float4 baseNoise4 = _BaseNoiseTex.SampleLevel(sampler_BaseNoiseTex, uvw + baseOffset, lod) ;
     // return remap (baseNoise4.r, 0.59, 1.0, 0.0, 1.0);
-    float erosion = (baseNoise4.g * 0.125) + (baseNoise4.b * 0.0125) + (baseNoise4.a * 0.0125);
+    float erosion = (baseNoise4.g * 0.225) + (baseNoise4.b * 0.125) + (baseNoise4.a * 0.065);
     // erosion = remap (erosion, 0.6f, 1.0f, 0.0f, 1.0f);
     float baseNoise = remap(baseNoise4.r, -(1 - erosion), 1.0, 0.0, 1.0);
     // return baseNoise;
     baseNoise *= heightMask;
-    baseNoise = remap(baseNoise, 1.0 - coverage, 1.0, 0.0, 1.0);
-    baseNoise *= coverage;
+    // baseNoise = remap(baseNoise, 1.0 - coverage, 1.0, 0.0, 1.0);
+    // baseNoise *= coverage;
+    baseNoise = saturate(baseNoise - (1.0f - coverage));
     // baseNoise *= coverage;
     // return baseNoise4.r*0.0525;
     // baseNoise = baseNoise4.r * baseNoise4.g * baseNoise4.b * baseNoise4.a;
     // baseNoise = saturate((baseNoise - _BaseNoiseThreshold) / (1.0 - _BaseNoiseThreshold));
     
     float final_cloud = baseNoise;
-    return final_cloud;
+    // return final_cloud;
     
     if (doDetailed)
     {
@@ -177,16 +178,16 @@ float sample_cloud_density(float3 worldPos, float realH, int lod, bool doDetaile
         // curl_noise = curl_noise * 2.0 - 1.0;
         // float2 curlDistortion = curl_noise * (1.0 - h_norm) * 60;
         // float3 distortedWorldPos = worldPos;
-        // distortedWorldPos.xz += curlDistortion.xz;
-        // worldPos.xz += curl_noise * (1 - h_norm) * 200;
+        // distortedWorldPos.xz += curlDistortion.xy;
+        // distortedWorldPos.xz += curl_noise * (1 - h_norm) * 200;
         
-        float3 detailedErosion = _DetailNoiseTex.SampleLevel(sampler_DetailNoiseTex, uvw_detail, 0).rgb;
-        float detailedErosion_fBm = (detailedErosion.r * 0.625) + (detailedErosion.g * 0.25) + (detailedErosion.b * 0.125);
+        float3 detailedErosion = _DetailNoiseTex.SampleLevel(sampler_DetailNoiseTex, uvw_detail + detailOffset, 0).rgb;
+        float detailedErosion_fBm = (detailedErosion.r * 0.425) + (detailedErosion.g * 0.125) + (detailedErosion.b * 0.065);
         
         // h_norm = GetHeightFractionForPoint(worldPos, _CloudMinHeight, _CloudMaxHeight);
         // float detailedErosionModifier = lerp (detailedErosion_fBm, 1 - detailedErosion_fBm, saturate(h_norm * 10.0));
         
-        final_cloud = remap(baseNoise, detailedErosion_fBm * 0.15, 1.0, 0.0, 1.0);
+        final_cloud = remap(baseNoise, detailedErosion_fBm * 0.15f, 1.0, 0.0, 1.0);
     }
     
     // return abs(final_cloud);
@@ -221,19 +222,19 @@ float HenyeyGreenstein(float cos_angle, float g)
 // Двойная фазовая функция (для эффекта "серебряной подкладки" - Silver Lining)
 float DualHenyeyGreenstein(float cos_angle)
 {
-    float g_forward = 0.3; // Насколько сильно свет рассеивается вперед
+    float g_forward = 0.65; // Насколько сильно свет рассеивается вперед
     float phase_forward = HenyeyGreenstein(cos_angle, g_forward);
     
-    float g_backward = -0.3;
+    float g_backward = 0.1;
     float phase_backward = HenyeyGreenstein(cos_angle, g_backward);
     
     float main_phase = lerp (phase_backward, phase_forward, 0.7); 
     
-    float g_silver = 0.1;
-    float silver_intensity = 0.1;
+    float g_silver = 0.15;
+    float silver_intensity = 0.33;
     float phase_silver = HenyeyGreenstein(cos_angle, 0.99 - g_silver);
     
-    return max(main_phase, silver_intensity * phase_silver);
+    // return max(main_phase, silver_intensity * phase_silver);
     
     // float w = 0.25;
     //
@@ -302,6 +303,7 @@ float GetLightEnergy(float3 p, float height_fraction, float dl, float ds_loded, 
     // float depth_probability = pow(ds_loded, 2.0);
     // float depth_probability = 0.05 + pow(ds_loded, clampRemap(height_fraction, 0.3, 0.85, 0.5, 2.0));
     float depth_probability = lerp(0.03 + pow(ds_loded, remap(height_fraction, 0.0, 0.85, 0.5, 2.5)), 1.0, saturate(dl / _LightStep));
+    // float depth_probability = remap(co)
     float vertical_probability = pow(remap(height_fraction, 0.0, 0.03, 0.5, 1.0), 0.9);
     float in_scatter_probability = depth_probability * vertical_probability;
 
