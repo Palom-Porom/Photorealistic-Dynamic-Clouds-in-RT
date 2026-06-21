@@ -35,7 +35,6 @@ float _WindSpeed;
 float2 _WindDirection;
 
 
-//New variables
 Texture2D<float4> _CloudMapTex;
 SamplerState sampler_CloudMapTex;
 
@@ -43,13 +42,20 @@ float _CloudMapScale;
 float2 _CloudMapOffset;
 
 
-//Light variables
-float3 _LightDir;   // Направление на солнце 
-float3 _LightColor; // Цвет солнца
-float _LightStep;   // Длина шага при маршинге к свету
+float3 _LightDir;   
+float3 _LightColor; 
+float _LightStep;   
 float3 _ZenithColor;
 float3 _HorizonColor;
 
+int _FrameIndex;
+
+static const uint2 Bayer4x4[16] = {
+    uint2(0,0), uint2(2,2), uint2(0,2), uint2(2,0),
+    uint2(1,1), uint2(3,3), uint2(1,3), uint2(3,1),
+    uint2(0,1), uint2(2,3), uint2(0,3), uint2(2,1),
+    uint2(1,0), uint2(3,2), uint2(1,2), uint2(3,0)
+};
 
 
 bool RayIntersectCloudShell(float3 camPos, float3 dir, float3 planetCenter, float planetRadius, float shellHeight, out float3 hitPoint)
@@ -117,7 +123,6 @@ float HeightGradient_Cumulus(float h)
 
 float HeightDensity(float h_norm, float cloudType)
 {
-    // h_norm = saturate((h_norm - _CloudMinHeight) / (_CloudMaxHeight - _CloudMinHeight));
     float stratus = HeightGradient_Stratus(h_norm);
     float cumulus = HeightGradient_Cumulus(h_norm);
     
@@ -130,12 +135,8 @@ float sample_cloud_density(float3 worldPos, float realH, int lod, bool doDetaile
 {    
 
     float3 uvw = worldPos * _BaseNoiseScale;
-    // uvw = frac(uvw);
     float3 uvw_detail = worldPos * _DetailNoiseScale;
-    // uvw_detail = frac(uvw_detail);
     float2 cloudMapUV = worldPos.xz * _CloudMapScale + _CloudMapOffset;
-    // cloudMapUV = frac(cloudMapUV);
-    //int3 coord = int3(uvw * int3(128, 128, 128));
     
     float h_norm = GetHeightFractionForPoint(realH, _CloudMinHeight, _CloudMaxHeight);
     float windShear = h_norm * 0.02f;
@@ -146,31 +147,18 @@ float sample_cloud_density(float3 worldPos, float realH, int lod, bool doDetaile
     float3 detailOffset = wind * _WindSpeed * 4.0 * _Time;
     
     float4 cloudData = _CloudMapTex.SampleLevel(sampler_CloudMapTex, cloudMapUV, 0);
-    // float coverage = remap (cloudData.r, 0.15, 1.0, 0.0, 1.0);
     float coverage = cloudData.r;
-    // coverage = saturate(coverage * 0.7f);
     
-    // float cloudType = 1.0 - cloudData.b;
     float cloudType = 1.0;
     float heightMask = HeightDensity(h_norm, cloudType);
     
     float4 baseNoise4 = _BaseNoiseTex.SampleLevel(sampler_BaseNoiseTex, uvw + baseOffset, lod) ;
-    // return remap (baseNoise4.r, 0.59, 1.0, 0.0, 1.0);
     float erosion = (baseNoise4.g * 0.225) + (baseNoise4.b * 0.125) + (baseNoise4.a * 0.065);
-    // erosion = remap (erosion, 0.6f, 1.0f, 0.0f, 1.0f);
     float baseNoise = remap(baseNoise4.r, -(1 - erosion), 1.0, 0.0, 1.0);
-    // return baseNoise;
     baseNoise *= heightMask;
-    // baseNoise = remap(baseNoise, 1.0 - coverage, 1.0, 0.0, 1.0);
-    // baseNoise *= coverage;
     baseNoise = saturate(baseNoise - (1.0f - coverage));
-    // baseNoise *= coverage;
-    // return baseNoise4.r*0.0525;
-    // baseNoise = baseNoise4.r * baseNoise4.g * baseNoise4.b * baseNoise4.a;
-    // baseNoise = saturate((baseNoise - _BaseNoiseThreshold) / (1.0 - _BaseNoiseThreshold));
     
     float final_cloud = baseNoise;
-    // return final_cloud;
     
     if (doDetailed)
     {
@@ -184,70 +172,29 @@ float sample_cloud_density(float3 worldPos, float realH, int lod, bool doDetaile
         float3 detailedErosion = _DetailNoiseTex.SampleLevel(sampler_DetailNoiseTex, uvw_detail + detailOffset, 0).rgb;
         float detailedErosion_fBm = (detailedErosion.r * 0.425) + (detailedErosion.g * 0.125) + (detailedErosion.b * 0.065);
         
-        // h_norm = GetHeightFractionForPoint(worldPos, _CloudMinHeight, _CloudMaxHeight);
-        // float detailedErosionModifier = lerp (detailedErosion_fBm, 1 - detailedErosion_fBm, saturate(h_norm * 10.0));
-        
         final_cloud = remap(baseNoise, detailedErosion_fBm * 0.15f, 1.0, 0.0, 1.0);
     }
     
-    // return abs(final_cloud);
     return final_cloud;
-    
-    
-    // float4 detailNoise4 = _DetailNoiseTex.SampleLevel(sampler_DetailNoiseTex, uvw + detailOffset, 0);
-    // float detailNoise = detailNoise4.g * detailNoise4.b * detailNoise4.a;
-    // detailNoise = saturate((detailNoise - _DetailNoiseThreshold) / (1.0 - _DetailNoiseThreshold));
-    //
-    // float3 curlNoise3 = _CurlNoiseTex.SampleLevel(sampler_CurlNoiseTex, uvw.xy + _WindDirection * _Time * 0.05, 0).rgb;
-    // float curlNoise = curlNoise3.r * curlNoise3.g * curlNoise3.b;
-    // curlNoise = saturate((curlNoise - _CurlNoiseThreshold) / (1.0 - _CurlNoiseThreshold));
-    // //return baseNoise;
-    // return (heightMask * baseNoise) - detailNoise * curlNoise;
-    
-    //float noise = SAMPLE_TEXTURE3D(_ShapeNoise, sampler_ShapeNoise, uvw).r;
-
-    //noise = saturate((noise - _BaseNoiseThreshold) / (1.0 - _BaseNoiseThreshold));
-
-    //return heightMask * noise;
 }
 
 
-// Фазовая функция Хеньи-Гринштейна для направленного рассеяния
 float HenyeyGreenstein(float cos_angle, float g)
 {
     float g2 = g * g;
     return ((1.0 - g2) / pow((1.0 + g2 - 2.0 * g * cos_angle), 1.5)) / (4.0 * 3.14159265);
 }
 
-// Двойная фазовая функция (для эффекта "серебряной подкладки" - Silver Lining)
 float DualHenyeyGreenstein(float cos_angle)
 {
-    float g_forward = 0.65; // Насколько сильно свет рассеивается вперед
-    float phase_forward = HenyeyGreenstein(cos_angle, g_forward);
-    
-    float g_backward = 0.1;
-    float phase_backward = HenyeyGreenstein(cos_angle, g_backward);
-    
-    float main_phase = lerp (phase_backward, phase_forward, 0.7); 
+    float g_forward = 0.65; 
     
     float g_silver = 0.15;
     float silver_intensity = 0.33;
-    float phase_silver = HenyeyGreenstein(cos_angle, 0.99 - g_silver);
     
-    // return max(main_phase, silver_intensity * phase_silver);
-    
-    // float w = 0.25;
-    //
-    // float phase_forward = HenyeyGreenstein(cos_angle, g_forward);
-    // float phase_silver  = silver_intensity * (cos_angle, 1.0 - g_silver);
-    // return lerp(phase_forward, phase_silver, w);
-    
-    // Комбинируем две функции через max(), как описано в Nubis
     return max(HenyeyGreenstein(cos_angle, g_forward), silver_intensity * HenyeyGreenstein(cos_angle, 0.99 - g_silver));
-    return HenyeyGreenstein(cos_angle, g_forward);
 }
 
-// Вспомогательный массив векторов для конусного сэмплирования к солнцу
 static const float3 noise_kernel[6] = 
 {
     float3( 0.3805,  0.4975,  0.3805),
@@ -258,7 +205,6 @@ static const float3 noise_kernel[6] =
     float3(-0.2528,  0.5596,  0.2528)
 };
 
-// Маршинг по направлению к солнцу для вычисления оптической толщины (плотности)
 float SampleCloudDensityAlongCone(float3 p, float3 ray_direction)
 {
     float density_along_cone = 0.0;
@@ -269,64 +215,52 @@ float SampleCloudDensityAlongCone(float3 p, float3 ray_direction)
     for(int i = 0; i < 6; i++)
     {
         t++;
-        // Смещаем точку с учетом расширения конуса
         p += light_step_vec + (cone_spread_multiplier * noise_kernel[i] * float(i));
         float3 samplePos = p;
-        // float3 samplePos = p + light_step_vec * float(i+1) + (cone_spread_multiplier * noise_kernel[i] * float(i));
-        // float3 samplePos = p + light_step_vec * float(i + 1);
         
         float realH = length(samplePos - float3(0, -_PlanetRadius, 0)) - _PlanetRadius;
         
-        // Выходим, если луч вышел за пределы облачного слоя
         if (realH > _CloudMaxHeight || realH < _CloudMinHeight) break;
 
-        // Берем дешевый сэмпл плотности (low LOD), как рекомендовано для света
         density_along_cone += sample_cloud_density(samplePos, realH, i * 0.5, true);
     }
     return density_along_cone;
 }
 
-// Расчет итоговой энергии света в точке (адаптировано из твоего примера и исправлено)
 float GetLightEnergy(float3 p, float height_fraction, float dl, float ds_loded, float phase_probability, float cos_angle, float step_size)
 {
-    // Затухание (Beer-Lambert) с хаком для "заталкивания" света глубже в облако
+    // Beer-Lambert
     float primary_attenuation = exp(-dl);
     float secondary_attenuation = exp(-dl * 0.25) * 0.8;
     float attenuation_probability = max(remap(cos_angle, 0.7, 1.0, secondary_attenuation, secondary_attenuation * 0.25), primary_attenuation);
      
-    // Вероятность in-scattering (чтобы края и низ облака казались темнее)
-    // ds_loded = 0.1f;
-    // float depth_probability = clamp(ds_loded, 0.0, 1.0);
-    // depth_probability = pow (depth_probability, 2.0);
-    // float depth_probability = pow(ds_loded, 1.5);
+    // in-scattering
     ds_loded = saturate(ds_loded);
-    // float depth_probability = pow(ds_loded, 2.0);
-    // float depth_probability = 0.05 + pow(ds_loded, clampRemap(height_fraction, 0.3, 0.85, 0.5, 2.0));
     float depth_probability = lerp(0.03 + pow(ds_loded, remap(height_fraction, 0.0, 0.85, 0.5, 2.5)), 1.0, saturate(dl / _LightStep));
-    // float depth_probability = remap(co)
     float vertical_probability = pow(remap(height_fraction, 0.0, 0.03, 0.5, 1.0), 0.9);
     float in_scatter_probability = depth_probability * vertical_probability;
 
-    // Итоговая энергия с учетом фазовой функции
-    // return attenuation_probability * in_scatter_probability * phase_probability * 25.5;
     return attenuation_probability * phase_probability * 18 * in_scatter_probability;
-    // return attenuation_probability * phase_probability * 9.5;
-    return depth_probability ;
 }
 
 
 [numthreads(8, 8, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {   
-    uint2 size;
-    Result.GetDimensions(size.x, size.y);
-    if (id.x >= size.x || id.y >= size.y)
+    uint2 fullSize;
+    Result.GetDimensions(fullSize.x, fullSize.y);
+    if (id.x >= fullSize.x / 4 || id.y >= fullSize.y / 4)
         return;
+    
+    uint2 lowResId = id.xy;
+    uint2 offset = Bayer4x4[_FrameIndex];
+    
+    uint2 fullResId = lowResId * 4 + offset;
     
      // Result[id.xy] = float4(1.0, 0.0, 0.0, 1.0);
      // return;
 
-    float2 pix = (float2(id.xy) + 0.5) / float2(size);
+    float2 pix = (float2(fullResId) + 0.5) / float2(fullSize);
     float2 ndc;
     ndc.x = pix.x * 2.0 - 1.0;
     ndc.y = (1.0 - pix.y) * 2.0 - 1.0;
@@ -342,12 +276,9 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     float3 planetCenter = float3(0, -_PlanetRadius, 0);
 
-    //float camHeight = length(_CameraPosition - planetCenter) - _PlanetRadius;
     float3 pos;
     bool hasEntry = false;
     
-    // float2 uv = id.xy / float2(size);
-    // float3 cloudData = _CloudMapTex.SampleLevel(sampler_CloudMapTex, uv, 0);
     // Result[id.xy] = float4(cloudData.r, 0, 0, 1);
     // return;
     
@@ -405,7 +336,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     float jitter =  2 * InterleavedGradientNoise(id.xy);
     
-    // Сдвигаем начальную позицию вперед на случайную долю текущего шага
+    // jittering for fixing artefacts
     pos += worldDir * step * jitter;
     
     while (coarseSteps < stepLimit)
@@ -419,8 +350,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
             break;
         }
     
-        // Calculate with low accuracy
-        
+        // Calculate with current accuracy
         float density = sample_cloud_density(pos, realH, 3 * float(!usingFine), usingFine);
         bool hasCloud = (density > 0.0);
     
@@ -453,33 +383,22 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         // Calculate lightning (high accuracy density calculation has been already done then)
         if (doAccumulate)
         {
-            // Косинус угла между лучом зрения и лучом света (для фазовой функции)
             float cos_angle = dot(worldDir, _LightDir);
             float phase_prob = DualHenyeyGreenstein(cos_angle);
-            // float phase_prob = 1;
             
-            // Вычисляем высоту в виде дроби (0.0 - низ облачного слоя, 1.0 - верх)
             float height_fraction = GetHeightFractionForPoint(realH, _CloudMinHeight, _CloudMaxHeight);
-            
-            // Плотность к источнику света (оптическая толщина)
             
             float density_to_light = SampleCloudDensityAlongCone(pos, _LightDir);
             float ds_loded = sample_cloud_density(pos, realH, 4, false);
             
-            // Получаем энергию света для данной точки
             float light_energy = GetLightEnergy(pos, height_fraction, density_to_light, ds_loded, phase_prob, cos_angle, step);
             
-            // Цвет освещенной частицы облака
             float3 particle_color = _LightColor * light_energy;
             
-            // Накапливаем цвет и альфу с учетом плотности и размера шага
-            float extinction = exp(-density * step * 0.25f); // Коэффициент поглощения
-            // float contrib = density * 0.25;
-            // color += (1.0 - alpha) * contrib * particle_color;
-            // color += (1.0 - alpha) * contrib;
+            float extinction = exp(-density * step * 0.25f);
+
             cloudColor += (1.0 - alpha) * particle_color * density;
             alpha += (1.0 - alpha) * (1.0 - extinction);
-            // alpha += (1.0 - alpha) * contrib;
             
             // color = _LightColor * light_energy;
             // alpha += 0.2;
@@ -496,14 +415,11 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         }
     
     
-        // step = usingFine ? fineStepLen : _CoarseStep;
         pos += worldDir * step;
         
         coarseSteps += (1 - usingFine); 
     }
     
-    // cloudColor = float3 (alpha, alpha, alpha);
-
     // Adding distanceFog and SkyColor
     float3 finalColor = cloudColor + (1.0 - alpha) * _ZenithColor;
     float fogDensity = 0.0002;
@@ -511,7 +427,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     finalColor = lerp(_HorizonColor, finalColor, fogFactor);
     
 
-    Result[id.xy] = float4(finalColor, 1.0);
+    Result[fullResId] = float4(finalColor, 1.0);
 
     // Result[id.xy] = float4(color, alpha);
 }

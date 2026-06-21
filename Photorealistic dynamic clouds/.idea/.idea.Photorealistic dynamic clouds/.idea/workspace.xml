@@ -10,11 +10,7 @@
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1543e8be-e477-40e0-a1e8-e4d357d5d9b0" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.Photorealistic dynamic clouds/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Photorealistic dynamic clouds/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/CloudRender.compute" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/CloudRender.compute" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/OutdoorsScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/OutdoorsScene.unity" afterDir="false" />
-    </list>
+    <list default="true" id="1543e8be-e477-40e0-a1e8-e4d357d5d9b0" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />

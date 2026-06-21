@@ -52,8 +52,6 @@ class CloudRenderPass : CustomPass
     public Gradient lightColorGradient;
     public Gradient zenithColorGradient;
     public Gradient horizonColorGradient;
-    // public float3 lightDir;
-    // public Color lightColor;
     public float lightStep = 25f;
     
     [Header("Wind")]
@@ -200,8 +198,12 @@ class CloudRenderPass : CustomPass
 
         // Debug.Log($"Camera X: {cam.transform.position.x}, Camera Y: {cam.transform.position.y}, Camera Z: {cam.transform.position.z}");
 
-        int x = Mathf.CeilToInt(_target.rt.width / 8.0f);
-        int y = Mathf.CeilToInt(_target.rt.height / 8.0f);
+        int frameIndex = Time.frameCount % 16;
+        cloudCompute.SetInt("_FrameIndex", frameIndex);
+        
+        int x = Mathf.CeilToInt((_target.rt.width / 4.0f) / 8.0f);
+        int y = Mathf.CeilToInt((_target.rt.height / 4.0f) / 8.0f);
+        
         cmd.DispatchCompute(cloudCompute, _kernelIndex, x, y, 1);
 
         // Debug.Log($"{x} and {y}");
