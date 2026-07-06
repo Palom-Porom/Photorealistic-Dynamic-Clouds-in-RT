@@ -1,6 +1,6 @@
 <img width="1452" height="679" alt="затухание света" src="https://github.com/user-attachments/assets/150164c8-6456-4d77-8f85-637aeb5da807" />
 
-Система фотореалистичного рендера облаков в реальном времени в Unity HDRP, основанная на вычислительных шейдерах, RayMarching и объемном рендеринге
+Система фотореалистичного рендера облаков в реальном времени в Unity HDRP, основанная на вычислительных шейдерах (HLSL), RayMarching и объемном рендеринге
 
 <img width="1276" height="604" alt="силвер лайнинг" src="https://github.com/user-attachments/assets/66b7b222-e60d-42c0-9405-b2e157a79e28" />
 
