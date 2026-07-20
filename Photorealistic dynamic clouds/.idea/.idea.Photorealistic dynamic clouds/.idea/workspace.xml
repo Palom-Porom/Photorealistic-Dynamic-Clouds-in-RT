@@ -10,7 +10,11 @@
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1543e8be-e477-40e0-a1e8-e4d357d5d9b0" name="Changes" comment="" />
+    <list default="true" id="1543e8be-e477-40e0-a1e8-e4d357d5d9b0" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.Photorealistic dynamic clouds/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Photorealistic dynamic clouds/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/CloudRender.compute" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/CloudRender.compute" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/CloudRenderPass.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/CloudRenderPass.cs" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -22,6 +26,7 @@
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/Assets/CloudRender.compute" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/CloudRenderPass.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/CloudTAA.shader" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Editor/Texture3DImporter.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Editor/TgaToVolumeTexture.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Editor/TgaToVolumeTextureDirect.cs" root0="SKIP_HIGHLIGHTING" />
@@ -148,6 +153,9 @@
       <workItem from="1780430551724" duration="4172000" />
       <workItem from="1780437305733" duration="6328000" />
       <workItem from="1780450521164" duration="2496000" />
+      <workItem from="1784555630237" duration="1401000" />
+      <workItem from="1784557929783" duration="206000" />
+      <workItem from="1784558359542" duration="725000" />
     </task>
     <servers />
   </component>

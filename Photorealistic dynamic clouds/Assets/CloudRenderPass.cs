@@ -68,6 +68,14 @@ class CloudRenderPass : CustomPass
     private float angle;
     private float3 _computedLightDir;
     private Color _computedLightColor;
+    
+    private RTHandle _lowResTarget;
+    private RTHandle[] _historyTargets = new RTHandle[2];
+    private int _pingPongIndex = 0;
+
+    private Material _taaMaterial;
+    private Matrix4x4 _prevViewProj;
+    private bool _firstFrame = true;
 
     float remap(float v, float a, float b, float c, float d)
     {
@@ -78,20 +86,30 @@ class CloudRenderPass : CustomPass
     {
         _kernelIndex = cloudCompute.FindKernel("CSMain");
 
-        if (_kernelIndex == -1)
-        {
-            Debug.LogError($"Kernel 'CSMain' not found in {cloudCompute.name}");
-            return;
-        }
-
-        _target = RTHandles.Alloc(
-            Vector2.one,
+        // Текстура уменьшенного разрешения для Compute Shader
+        _lowResTarget = RTHandles.Alloc(
+            Vector2.one * 0.25f, // 1/4 от экрана!
             dimension: TextureDimension.Tex2D,
             colorFormat: GraphicsFormat.R16G16B16A16_SFloat,
             enableRandomWrite: true,
             useDynamicScale: true,
-            name: "CloudRT"
+            name: "CloudLowResRT"
         );
+
+        // Два буфера для истории полного размера (пинг-понг)
+        for (int i = 0; i < 2; i++)
+        {
+            _historyTargets[i] = RTHandles.Alloc(
+                Vector2.one,
+                dimension: TextureDimension.Tex2D,
+                colorFormat: GraphicsFormat.R16G16B16A16_SFloat,
+                useDynamicScale: true,
+                name: $"CloudHistoryRT_{i}"
+            );
+        }
+    
+        if (_taaMaterial == null)
+            _taaMaterial = CoreUtils.CreateEngineMaterial(Shader.Find("Hidden/CloudTAA"));
         
         _lastTime = Application.isPlaying ? Time.time : Time.realtimeSinceStartup;
         morningAngle = Mathf.Asin(-0.1f); 
@@ -124,20 +142,36 @@ class CloudRenderPass : CustomPass
     
     protected override void Execute(CustomPassContext ctx)
     {
-        if (cloudCompute == null || blitMaterial == null)
-            return;
+        if (cloudCompute == null || blitMaterial == null || _taaMaterial == null) return;
 
         var cmd = ctx.cmd;
         var cam = ctx.hdCamera.camera;
         
         UpdateDayNightCycle();
-
-        cmd.SetComputeTextureParam(cloudCompute, _kernelIndex, "Result", _target);
-
-        cmd.SetComputeVectorParam(cloudCompute, "_CameraPosition", cam.transform.position);
+        
         Matrix4x4 gpuProj = GL.GetGPUProjectionMatrix(cam.projectionMatrix, true);
         Matrix4x4 view = cam.worldToCameraMatrix;
-        Matrix4x4 invViewProj = (gpuProj * view).inverse;
+        Matrix4x4 vp = gpuProj * view;
+        Matrix4x4 invViewProj = vp.inverse;
+        // Берем чистую матрицу БЕЗ встроенного микро-сдвига HDRP
+        // Matrix4x4 proj = cam.nonJitteredProjectionMatrix; 
+        // Matrix4x4 view = cam.worldToCameraMatrix;
+        // Matrix4x4 vp = proj * view;
+        // Matrix4x4 invViewProj = vp.inverse;
+        
+        if (_firstFrame)
+        {
+            _prevViewProj = vp;
+            _firstFrame = false;
+        }
+
+        // cmd.SetComputeTextureParam(cloudCompute, _kernelIndex, "Result", _target);
+        cmd.SetComputeTextureParam(cloudCompute, _kernelIndex, "Result", _lowResTarget);
+        
+        cmd.SetComputeVectorParam(cloudCompute, "_CameraPosition", cam.transform.position);
+        // Matrix4x4 gpuProj = GL.GetGPUProjectionMatrix(cam.projectionMatrix, true);
+        // Matrix4x4 view = cam.worldToCameraMatrix;
+        // Matrix4x4 invViewProj = (gpuProj * view).inverse;
         cmd.SetComputeMatrixParam(cloudCompute, "_InvViewProj", invViewProj);
 
         cmd.SetComputeFloatParam(cloudCompute, "_PlanetRadius", planetRadius);
@@ -198,27 +232,59 @@ class CloudRenderPass : CustomPass
 
         // Debug.Log($"Camera X: {cam.transform.position.x}, Camera Y: {cam.transform.position.y}, Camera Z: {cam.transform.position.z}");
 
+        // int frameIndex = Time.frameCount % 16;
+        // cloudCompute.SetInt("_FrameIndex", frameIndex);
+        //
+        // int x = Mathf.CeilToInt((_target.rt.width / 4.0f) / 8.0f);
+        // int y = Mathf.CeilToInt((_target.rt.height / 4.0f) / 8.0f);
+        //
+        // cmd.DispatchCompute(cloudCompute, _kernelIndex, x, y, 1);
+        //
+        // // Debug.Log($"{x} and {y}");
+        //
+        // blitMaterial.SetTexture("_Source", _target);
+        // HDUtils.DrawFullScreen(
+        //     cmd,
+        //     blitMaterial,
+        //     ctx.cameraColorBuffer
+        // );
         int frameIndex = Time.frameCount % 16;
         cloudCompute.SetInt("_FrameIndex", frameIndex);
-        
-        int x = Mathf.CeilToInt((_target.rt.width / 4.0f) / 8.0f);
-        int y = Mathf.CeilToInt((_target.rt.height / 4.0f) / 8.0f);
-        
+    
+        // Диспетчеризируем с учетом уменьшенной текстуры
+        int x = Mathf.CeilToInt((cam.pixelWidth / 4.0f) / 8.0f);
+        int y = Mathf.CeilToInt((cam.pixelHeight / 4.0f) / 8.0f);
         cmd.DispatchCompute(cloudCompute, _kernelIndex, x, y, 1);
 
-        // Debug.Log($"{x} and {y}");
-        
-        blitMaterial.SetTexture("_Source", _target);
-        HDUtils.DrawFullScreen(
-            cmd,
-            blitMaterial,
-            ctx.cameraColorBuffer
-        );
+        // --- TAA Репроекция ---
+        int readIndex = _pingPongIndex;
+        int writeIndex = (_pingPongIndex + 1) % 2;
+        _pingPongIndex = writeIndex; // Переключаем на следующий кадр
+
+        _taaMaterial.SetTexture("_LowResTex", _lowResTarget);
+        _taaMaterial.SetTexture("_HistoryTex", _historyTargets[readIndex]);
+        _taaMaterial.SetMatrix("_PrevViewProj", _prevViewProj);
+        _taaMaterial.SetMatrix("_InvViewProj", invViewProj);
+        _taaMaterial.SetVector("_CameraPosition", cam.transform.position);
+        _taaMaterial.SetInt("_FrameIndex", frameIndex);
+
+        // Рисуем собранный TAA-кадр в историю
+        CoreUtils.SetRenderTarget(cmd, _historyTargets[writeIndex]);
+        CoreUtils.DrawFullScreen(cmd, _taaMaterial);
+
+        // Выводим финальную картинку на экран твоим старым материалом
+        blitMaterial.SetTexture("_Source", _historyTargets[writeIndex]);
+        HDUtils.DrawFullScreen(cmd, blitMaterial, ctx.cameraColorBuffer);
+
+        // Запоминаем матрицу для следующего кадра
+        _prevViewProj = vp;
     }
 
     protected override void Cleanup()
     {
-        _target?.Release();
+        _lowResTarget?.Release();
+        _historyTargets[0]?.Release();
+        _historyTargets[1]?.Release();
     }
 }
 

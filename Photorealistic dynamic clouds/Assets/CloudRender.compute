@@ -247,30 +247,59 @@ float GetLightEnergy(float3 p, float height_fraction, float dl, float ds_loded, 
 [numthreads(8, 8, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {   
-    uint2 fullSize;
-    Result.GetDimensions(fullSize.x, fullSize.y);
-    if (id.x >= fullSize.x / 4 || id.y >= fullSize.y / 4)
+    uint2 lowResSize;
+    Result.GetDimensions(lowResSize.x, lowResSize.y);
+    
+    // Отсекаем лишние потоки по размеру low-res текстуры
+    if (id.x >= lowResSize.x || id.y >= lowResSize.y)
         return;
     
     uint2 lowResId = id.xy;
+    uint2 fullSize = lowResSize * 4;
     uint2 offset = Bayer4x4[_FrameIndex];
     
+    // Рассчитываем реальный пиксель на фуллскрине для правильного raymarch-луча
     uint2 fullResId = lowResId * 4 + offset;
-    
-     // Result[id.xy] = float4(1.0, 0.0, 0.0, 1.0);
-     // return;
 
     float2 pix = (float2(fullResId) + 0.5) / float2(fullSize);
     float2 ndc;
     ndc.x = pix.x * 2.0 - 1.0;
     ndc.y = (1.0 - pix.y) * 2.0 - 1.0;
-
+    
     float4 clip = float4(ndc, 1, 1);
+    // float2 pix = (float2(fullResId) + 0.5) / float2(fullSize);
+    // float2 ndc = pix * 2.0 - 1.0; 
+    //
+    // // Используем Z=0.5, чтобы избежать проблем с Near/Far clip planes при Reverse-Z
+    // float4 clip = float4(ndc, 0.5, 1.0);
     float4 worldPos = mul(_InvViewProj, clip);
     worldPos /= worldPos.w;
 
     float3 worldDir = normalize(worldPos.xyz - _CameraPosition);
-    
+    // uint2 fullSize;
+    // Result.GetDimensions(fullSize.x, fullSize.y);
+    // if (id.x >= fullSize.x / 4 || id.y >= fullSize.y / 4)
+    //     return;
+    //
+    // uint2 lowResId = id.xy;
+    // uint2 offset = Bayer4x4[_FrameIndex];
+    //
+    // uint2 fullResId = lowResId * 4 + offset;
+    //
+    //  // Result[id.xy] = float4(1.0, 0.0, 0.0, 1.0);
+    //  // return;
+    //
+    // float2 pix = (float2(fullResId) + 0.5) / float2(fullSize);
+    // float2 ndc;
+    // ndc.x = pix.x * 2.0 - 1.0;
+    // ndc.y = (1.0 - pix.y) * 2.0 - 1.0;
+    //
+    // float4 clip = float4(ndc, 1, 1);
+    // float4 worldPos = mul(_InvViewProj, clip);
+    // worldPos /= worldPos.w;
+    //
+    // float3 worldDir = normalize(worldPos.xyz - _CameraPosition);
+    //
     // Result[id.xy] = float4(worldDir.y, 0.0, 0.0, 1.0);
     // return;
 
@@ -420,14 +449,24 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         coarseSteps += (1 - usingFine); 
     }
     
-    // Adding distanceFog and SkyColor
+    // // Adding distanceFog and SkyColor
+    // float3 finalColor = cloudColor + (1.0 - alpha) * _ZenithColor;
+    // float fogDensity = 0.0002;
+    // float fogFactor = saturate(exp(-length(pos - _CameraPosition) * fogDensity));
+    // finalColor = lerp(_HorizonColor, finalColor, fogFactor);
+    //
+    //
+    // Result[fullResId] = float4(finalColor, 1.0);
     float3 finalColor = cloudColor + (1.0 - alpha) * _ZenithColor;
     float fogDensity = 0.0002;
     float fogFactor = saturate(exp(-length(pos - _CameraPosition) * fogDensity));
     finalColor = lerp(_HorizonColor, finalColor, fogFactor);
     
+    // Сохраняем дистанцию до облака для репроекции (если попали в небо, дистанция 0)
+    float distance = (alpha > 0.01) ? length(pos - _CameraPosition) : 0.0;
 
-    Result[fullResId] = float4(finalColor, 1.0);
+    // Пишем в компактную low-res текстуру!
+    Result[lowResId] = float4(finalColor, distance);
 
     // Result[id.xy] = float4(color, alpha);
 }
